@@ -1,0 +1,56 @@
+### -*- mode: ruby -*-
+### vi: set ft=ruby :
+
+vmset = {
+	"centos"  => { :image => "centos8",  :RAM => 4096, :CPUs => 2 },
+	"debian"  => { :image => "debian11", :RAM => 4096, :CPUs => 2 },
+	#"manjaro" => { :image => "manjaro",  :port => 2224 },
+}
+
+Vagrant.configure("2") do |config|
+    config.ssh.username = 'vagrant'
+	config.ssh.insert_key = false
+    config.vm.synced_folder './', '/vagrant', type: 'rsync'
+
+    # For every entry in vmset ...
+	vmset.each_with_index do | (hostname, info), index |
+
+		config.vm.define hostname do | host |
+
+            host.vm.box = info[:image]
+            host.vm.network :public_network,
+                :dev => "br0",
+                :mode => "bridge",
+                :type => "bridge",
+                :network_name => "bridge"
+
+			host.vm.provider :libvirt do |libvirt|
+                libvirt.host     = 'irix'
+                libvirt.username = 'root'
+                libvirt.connect_via_ssh = true
+                libvirt.proxy_command = "ssh {host} -l {username} -i {id_ssh_key_file} nc %h %p"
+
+                libvirt.driver   = 'kvm'
+                libvirt.id_ssh_key_file = "/Users/vst/.ssh/id_rsa"
+				libvirt.cpus     = info[:CPUs]
+				libvirt.memory   = info[:RAM]
+                libvirt.channel :type => 'unix', :target_name => 'org.qemu.guest_agent.0', :target_type => 'virtio'
+                libvirt.storage_pool_name = 'virt'
+                libvirt.default_prefix = "vagrant_"
+                #libvirt.management_network_device = 'virbr0'
+			end # end provider
+
+			host.vm.provision "ansible" do |ansible|
+				ansible.become      = true
+				ansible.playbook          = "site.yml"
+				ansible.config_file       = "ansible.cfg"
+                ansible.force_remote_user = true
+				#ansible.inventory_path = "~/.ansible/hosts"
+                ansible.groups = {
+                    "all" => [ 'debian', 'centos' ],
+                    "vim_hosts" => [ 'debian' ],
+                }
+			end # provision
+		end # end vm.devine
+	end # end vmset
+end # config
