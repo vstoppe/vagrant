@@ -2,9 +2,9 @@
 ### vi: set ft=ruby :
 
 vmset = {
-	"centos"  => { :image => "centos8",  :RAM => 4096, :CPUs => 2 },
+	#"centos"  => { :image => "centos8",  :RAM => 4096, :CPUs => 2 },
 	"debian"  => { :image => "debian11", :RAM => 4096, :CPUs => 2 },
-	"manjaro" => { :image => "manjaro",  :RAM => 4096, :CPUs => 2 },
+	#"manjaro" => { :image => "manjaro",  :RAM => 4096, :CPUs => 2 },
 }
 
 # Do not destroy Domain on provisioner error:
